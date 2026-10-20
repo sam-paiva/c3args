@@ -2,10 +2,28 @@ module core;
 
 import std::collections::list;
 
+alias CommandHandler = fn void(Matches* matches);
+
 struct Command
 {
     String name;
+    String description;
     Arg[] args;
+    Command[] subcommands;
+    CommandHandler handler;
+}
+
+fn int Command.find_subcommand(Command* command, String name)
+{
+    for (int i = 0; i < command.subcommands.len; i++)
+    {
+        if (command.subcommands[i].name == name)
+        {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 fn int Command.find_long_arg(Command* command, String name)
