@@ -1,0 +1,16 @@
+module core;
+
+enum ArgKind
+{
+    FLAG,
+    OPTION
+}
+
+struct Arg
+{
+    String name;
+    String short_name;
+    ArgKind kind;
+    bool required;
+    String description;
+}

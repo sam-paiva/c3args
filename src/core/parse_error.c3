@@ -1,0 +1,15 @@
+module core;
+
+enum ParseErrorKind
+{
+    UNKNOWN_OPTION,
+    MISSING_VALUE,
+    UNEXPECTED_ARGUMENT,
+    MISSING_REQUIRED_ARGUMENT
+}
+
+struct ParseError
+{
+    ParseErrorKind kind;
+    String argument;
+}
