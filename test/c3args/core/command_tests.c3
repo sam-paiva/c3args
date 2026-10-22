@@ -468,3 +468,167 @@ fn void test_double_dash_without_required_value_fails() @test
         "Expected missing required argument error"
     );
 }
+
+fn void test_negative_value_is_accepted() @test
+{
+    Arg[1] args = {
+        {
+            .name = "count",
+            .kind = ArgKind.OPTION
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .args = args[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){ "--count", "-5" };
+
+    bool success = command.parse(argv, &matches, &error);
+
+    assert(success, "Negative values should be accepted");
+
+    String value;
+    assert(matches.get("count", &value), "Count should be present");
+    assert(value == "-5", "Count should equal -5");
+}
+
+fn void test_empty_inline_value_is_rejected() @test
+{
+    Arg[1] args = {
+        {
+            .name = "name",
+            .kind = ArgKind.OPTION
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .args = args[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){ "--name=" };
+
+    bool success = command.parse(argv, &matches, &error);
+
+    assert(!success, "Empty inline values should be rejected");
+    assert(
+        error.kind == ParseErrorKind.MISSING_VALUE,
+        "Empty inline values should report a missing value"
+    );
+}
+
+fn void test_duplicate_long_argument_name_is_rejected() @test
+{
+    Arg[2] args = {
+        {
+            .name = "name",
+            .short_name = "n",
+            .kind = ArgKind.OPTION
+        }
+        ,
+        {
+            .name = "name",
+            .short_name = "N",
+            .kind = ArgKind.FLAG
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .args = args[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){};
+
+    bool success = command.parse(argv, &matches, &error);
+
+    assert(!success, "Duplicate long names should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error"
+    );
+}
+
+fn void test_duplicate_short_argument_name_is_rejected() @test
+{
+    Arg[2] args = {
+        {
+            .name = "name",
+            .short_name = "x",
+            .kind = ArgKind.OPTION
+        }
+        ,
+        {
+            .name = "verbose",
+            .short_name = "x",
+            .kind = ArgKind.FLAG
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .args = args[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){};
+
+    bool success = command.parse(argv, &matches, &error);
+
+    assert(!success, "Duplicate short names should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error"
+    );
+}
+
+fn void test_empty_argument_name_is_rejected() @test
+{
+    Arg[1] args = {
+        {
+            .name = "",
+            .kind = ArgKind.OPTION
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .args = args[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){};
+
+    bool success = command.parse(argv, &matches, &error);
+
+    assert(!success, "Empty argument names should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error"
+    );
+}

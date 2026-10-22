@@ -40,6 +40,75 @@ fn int Command.find_long_arg(Command* command, String name)
     return -1;
 }
 
+fn bool Command.validate(Command* command, ParseError* error)
+{
+    // Validate arguments belonging to this command.
+    for (int i = 0; i < command.args.len; i++)
+    {
+        Arg current = command.args[i];
+
+        if (current.name.len == 0)
+        {
+            error.kind = ParseErrorKind.INVALID_DEFINITION;
+            error.argument = current.name;
+            return false;
+        }
+
+        for (int j = i + 1; j < command.args.len; j++)
+        {
+            Arg other = command.args[j];
+
+            if (current.name == other.name)
+            {
+                error.kind = ParseErrorKind.INVALID_DEFINITION;
+                error.argument = current.name;
+                return false;
+            }
+
+            if (
+                current.short_name.len > 0 &&
+                current.short_name == other.short_name
+            )
+            {
+                error.kind = ParseErrorKind.INVALID_DEFINITION;
+                error.argument = current.short_name;
+                return false;
+            }
+        }
+    }
+
+    // Validate subcommand names and detect duplicate siblings.
+    for (int i = 0; i < command.subcommands.len; i++)
+    {
+        Command* current = &command.subcommands[i];
+
+        if (current.name.len == 0)
+        {
+            error.kind = ParseErrorKind.INVALID_DEFINITION;
+            error.argument = current.name;
+            return false;
+        }
+
+        for (int j = i + 1; j < command.subcommands.len; j++)
+        {
+            if (current.name == command.subcommands[j].name)
+            {
+                error.kind = ParseErrorKind.INVALID_DEFINITION;
+                error.argument = current.name;
+                return false;
+            }
+        }
+
+        // Recursively validate this subcommand's own definition.
+        if (!current.validate(error))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 fn bool Command.parse(
     Command* command,
     String[] argv,
@@ -47,6 +116,11 @@ fn bool Command.parse(
     ParseError* error
 )
 {
+    if (!command.validate(error))
+    {
+        return false;
+    }
+
     int positional_index = 0;
     bool options_terminated = false;
 
@@ -202,11 +276,21 @@ fn bool Command.parse(
             String next_token = argv[i + 1];
 
             // Don't mistake another option for this option's value.
+            // Negative numeric values are valid option values.
             if (next_token.len >= 2 && next_token[0] == '-')
             {
-                error.kind = ParseErrorKind.MISSING_VALUE;
-                error.argument = token;
-                return false;
+                bool is_negative_number =
+                next_token.len >= 2 &&
+                next_token[0] == '-' &&
+                next_token[1] >= '0' &&
+                next_token[1] <= '9';
+
+                if (!is_negative_number)
+                {
+                    error.kind = ParseErrorKind.MISSING_VALUE;
+                    error.argument = token;
+                    return false;
+                }
             }
 
             i++;

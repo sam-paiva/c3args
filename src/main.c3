@@ -143,6 +143,11 @@ fn void main(String[] argv)
                 io::printfn("Unexpected argument '%s'.", error.argument);
             case ParseErrorKind.DUPLICATE_ARGUMENT:
                 io::printfn("Option '%s' cannot be specified more than once.", error.argument);
+            case INVALID_DEFINITION:
+                io::printfn(
+                    "Error: Invalid command definition: %s",
+                    error.argument
+                );
         }
 
         return;
