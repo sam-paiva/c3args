@@ -9,6 +9,7 @@ struct Command
     String name;
     String description;
     Arg[] args;
+    PositionalArg[] positionals;
     Command[] subcommands;
     CommandHandler handler;
 }
@@ -46,17 +47,43 @@ fn bool Command.parse(
     ParseError* error
 )
 {
+    int positional_index = 0;
+
     for (int i = 0; i < argv.len; i++)
     {
         String token = argv[i];
 
-        // Every token must begin with a dash.
-        if (token.len < 2 || token[0] != '-')
+        // Tokens that don't start with '-' are positional arguments.
+        if (token.len == 0 || token[0] != '-')
+        {
+            if (positional_index >= command.positionals.len)
+            {
+                error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
+                error.argument = token;
+                return false;
+            }
+
+            PositionalArg positional = command.positionals[positional_index];
+
+            matches.add_option(positional.name, token);
+
+            if (!positional.allow_multiple)
+            {
+                positional_index++;
+            }
+
+            continue;
+        }
+
+        // A lone '-' is not a valid option.
+        if (token.len < 2)
         {
             error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
             error.argument = token;
             return false;
         }
+
+        // Keep the existing long/short option parsing below this point.
 
         bool is_long_option = token[1] == '-';
 
@@ -190,6 +217,16 @@ fn bool Command.parse(
         {
             error.kind = ParseErrorKind.MISSING_REQUIRED_ARGUMENT;
             error.argument = arg.name;
+            return false;
+        }
+    }
+
+    foreach (positional : command.positionals)
+    {
+        if (positional.required && !matches.has(positional.name))
+        {
+            error.kind = ParseErrorKind.MISSING_REQUIRED_ARGUMENT;
+            error.argument = positional.name;
             return false;
         }
     }

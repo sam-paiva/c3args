@@ -15,3 +15,11 @@ struct Arg
     bool allow_multiple;
     String description;
 }
+
+struct PositionalArg
+{
+    String name;
+    bool required;
+    String description;
+    bool allow_multiple;
+}

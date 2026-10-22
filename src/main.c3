@@ -47,6 +47,16 @@ fn void handle_set(Matches* matches)
 fn void main(String[] argv)
 {
 
+    //Register a Positional Argument
+    PositionalArg[1] get_positionals = {
+        {
+            .name = "name",
+            .required = true,
+            .allow_multiple = true,
+            .description = "Names to retrieve"
+        }
+    };
+
     Arg[2] get_definitions = {
         {
             .name = "name",
@@ -79,7 +89,8 @@ fn void main(String[] argv)
         .name = "get",
         .description = "Get configuration",
         .args = get_definitions[0..],
-        .handler = &handle_get
+        .handler = &handle_get,
+        .positionals = get_positionals[0..]
     };
 
     Command set_command = {
