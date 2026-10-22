@@ -2,12 +2,34 @@ module c3args;
 
 import std::io;
 import core;
+import std::collections::list;
 
 fn void handle_get(Matches* matches)
 {
-    foreach (entry : matches.entries)
+    String name;
+
+    if (matches.get("name", &name))
     {
-        io::printfn("%s = %s", entry.name, entry.value);
+        io::printfn("Name: %s", name);
+    }
+
+    bool verbose;
+    matches.get_bool("verbose", &verbose);
+
+    if (verbose)
+    {
+        io::printn("Verbose mode enabled.");
+    }
+
+    List{String} names;
+    names.init(mem);
+    defer names.free();
+
+    matches.get_all("name", &names);
+
+    foreach (name_entry : names)
+    {
+        io::printfn("Found name: %s", name_entry);
     }
 }
 
@@ -25,13 +47,21 @@ fn void handle_set(Matches* matches)
 fn void main(String[] argv)
 {
 
-    Arg[1] get_definitions = {
+    Arg[2] get_definitions = {
         {
             .name = "name",
             .short_name = "n",
             .kind = ArgKind.OPTION,
             .required = true,
             .description = "Name to retrieve"
+        }
+        ,
+        {
+            .name = "verbose",
+            .short_name = "v",
+            .kind = ArgKind.FLAG,
+            .required = false,
+            .description = "Enable verbose output"
         }
     };
 
@@ -61,7 +91,7 @@ fn void main(String[] argv)
 
     Command[2] config_subcommands = {
         get_command,
-        set_command
+        set_command,
     };
 
     Command config_command = {
@@ -100,6 +130,8 @@ fn void main(String[] argv)
                 io::printfn("Missing required argument: --%s", error.argument);
             case ParseErrorKind.UNEXPECTED_ARGUMENT:
                 io::printfn("Unexpected argument '%s'.", error.argument);
+            case ParseErrorKind.DUPLICATE_ARGUMENT:
+                io::printfn("Option '%s' cannot be specified more than once.", error.argument);
         }
 
         return;

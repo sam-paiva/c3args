@@ -32,6 +32,20 @@ fn bool Matches.has(Matches* matches, String name)
     return false;
 }
 
+fn bool Matches.get(Matches* matches, String name, String* out_value)
+{
+    foreach (entry : matches.entries)
+    {
+        if (entry.name == name && !entry.is_flag)
+        {
+            *out_value = entry.value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 fn void Matches.add_flag(Matches* matches, String name)
 {
 
@@ -53,4 +67,30 @@ fn void Matches.add_option(Matches* matches, String name, String value)
             .is_flag = false,
         }
     );
+}
+
+fn bool Matches.get_bool(Matches* matches, String name, bool* value)
+{
+    foreach (entry : matches.entries)
+    {
+        if (entry.name == name && entry.is_flag)
+        {
+            *value = true;
+            return true;
+        }
+    }
+
+    * value = false;
+    return false;
+}
+
+fn void Matches.get_all(Matches* matches, String name, List{String} * values)
+{
+    foreach (entry : matches.entries)
+    {
+        if (entry.name == name && !entry.is_flag)
+        {
+            values.push(entry.value);
+        }
+    }
 }

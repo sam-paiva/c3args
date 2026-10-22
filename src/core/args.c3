@@ -12,5 +12,6 @@ struct Arg
     String short_name;
     ArgKind kind;
     bool required;
+    bool allow_multiple;
     String description;
 }

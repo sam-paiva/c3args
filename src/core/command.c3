@@ -85,8 +85,19 @@ fn bool Command.parse(
 
         if (arg.kind == ArgKind.FLAG)
         {
-            matches.add_flag(arg.name);
+            if (!matches.has(arg.name))
+            {
+                matches.add_flag(arg.name);
+            }
+
             continue;
+        }
+
+        if (matches.has(arg.name) && !arg.allow_multiple)
+        {
+            error.kind = ParseErrorKind.DUPLICATE_ARGUMENT;
+            error.argument = arg.name;
+            return false;
         }
 
         if ((long)i + 1 >= argv.len)
