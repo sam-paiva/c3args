@@ -1,4 +1,4 @@
-module core;
+module c3args::core;
 
 enum ArgKind
 {

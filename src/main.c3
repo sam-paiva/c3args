@@ -1,7 +1,7 @@
 module c3args;
 
 import std::io;
-import core;
+import c3args::core;
 import std::collections::list;
 
 fn void handle_get(Matches* matches)
