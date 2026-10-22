@@ -48,13 +48,21 @@ fn bool Command.parse(
 )
 {
     int positional_index = 0;
+    bool options_terminated = false;
 
     for (int i = 0; i < argv.len; i++)
     {
         String token = argv[i];
 
-        // Tokens that don't start with '-' are positional arguments.
-        if (token.len == 0 || token[0] != '-')
+        // "--" ends option parsing.
+        if (!options_terminated && token == "--")
+        {
+            options_terminated = true;
+            continue;
+        }
+
+        // After "--", every token is positional.
+        if (options_terminated || token.len == 0 || token[0] != '-')
         {
             if (positional_index >= command.positionals.len)
             {
@@ -82,8 +90,6 @@ fn bool Command.parse(
             error.argument = token;
             return false;
         }
-
-        // Keep the existing long/short option parsing below this point.
 
         bool is_long_option = token[1] == '-';
 
