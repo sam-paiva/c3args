@@ -50,6 +50,7 @@ fn bool Command.parse(
     {
         String token = argv[i];
 
+        // Every token must begin with a dash.
         if (token.len < 2 || token[0] != '-')
         {
             error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
@@ -57,23 +58,60 @@ fn bool Command.parse(
             return false;
         }
 
-        bool is_long_option = token.len >= 2
-        && token[1] == '-';
+        bool is_long_option = token[1] == '-';
 
         String name;
+        String value;
+        bool has_inline_value = false;
         int arg_index;
 
+        // Resolve the argument name and optional inline value.
         if (is_long_option)
         {
-            name = token[2..];
+            String option_token = token[2..];
+
+            for (int j = 0; j < option_token.len; j++)
+            {
+                if (option_token[j] == '=')
+                {
+                    name = option_token[0..(j - 1)];
+                    value = option_token[(j + 1)..];
+                    has_inline_value = true;
+                    break;
+                }
+            }
+
+            if (!has_inline_value)
+            {
+                name = option_token;
+            }
+
             arg_index = command.find_long_arg(name);
         }
         else
         {
-            name = token[1..];
+            String option_token = token[1..];
+
+            for (int j = 0; j < option_token.len; j++)
+            {
+                if (option_token[j] == '=')
+                {
+                    name = option_token[0..(j - 1)];
+                    value = option_token[(j + 1)..];
+                    has_inline_value = true;
+                    break;
+                }
+            }
+
+            if (!has_inline_value)
+            {
+                name = option_token;
+            }
+
             arg_index = command.find_short_arg(name);
         }
 
+        // Reject unknown arguments.
         if (arg_index == -1)
         {
             error.kind = ParseErrorKind.UNKNOWN_OPTION;
@@ -83,8 +121,16 @@ fn bool Command.parse(
 
         Arg arg = command.args[arg_index];
 
+        // Flags do not consume values and are idempotent.
         if (arg.kind == ArgKind.FLAG)
         {
+            if (has_inline_value)
+            {
+                error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
+                error.argument = token;
+                return false;
+            }
+
             if (!matches.has(arg.name))
             {
                 matches.add_flag(arg.name);
@@ -93,6 +139,7 @@ fn bool Command.parse(
             continue;
         }
 
+        // Reject duplicate options unless repetition is enabled.
         if (matches.has(arg.name) && !arg.allow_multiple)
         {
             error.kind = ParseErrorKind.DUPLICATE_ARGUMENT;
@@ -100,15 +147,40 @@ fn bool Command.parse(
             return false;
         }
 
-        if ((long)i + 1 >= argv.len)
+        // Read an inline value or consume the next token.
+        if (has_inline_value)
         {
-            error.kind = ParseErrorKind.MISSING_VALUE;
-            error.argument = token;
-            return false;
+            if (value.len == 0)
+            {
+                error.kind = ParseErrorKind.MISSING_VALUE;
+                error.argument = token;
+                return false;
+            }
+        }
+        else
+        {
+            if ((long)i + 1 >= argv.len)
+            {
+                error.kind = ParseErrorKind.MISSING_VALUE;
+                error.argument = token;
+                return false;
+            }
+
+            String next_token = argv[i + 1];
+
+            // Don't mistake another option for this option's value.
+            if (next_token.len >= 2 && next_token[0] == '-')
+            {
+                error.kind = ParseErrorKind.MISSING_VALUE;
+                error.argument = token;
+                return false;
+            }
+
+            i++;
+            value = argv[i];
         }
 
-        i++;
-        matches.add_option(arg.name, argv[i]);
+        matches.add_option(arg.name, value);
     }
 
     // Validate required arguments after parsing.
