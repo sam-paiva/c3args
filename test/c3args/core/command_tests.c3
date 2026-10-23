@@ -632,3 +632,176 @@ fn void test_empty_argument_name_is_rejected() @test
         "Expected invalid definition error"
     );
 }
+
+fn void test_duplicate_sibling_subcommands_are_rejected() @test
+{
+    Command[2] subcommands = {
+        {
+            .name = "get"
+        }
+        ,
+        {
+            .name = "get"
+        }
+    };
+
+    Command root = {
+        .name = "config",
+        .subcommands = subcommands[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){};
+
+    bool success = root.parse(argv, &matches, &error);
+
+    assert(!success, "Duplicate sibling subcommands should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error for duplicate subcommands"
+    );
+}
+
+fn void test_invalid_definition_in_nested_subcommand_is_rejected() @test
+{
+    Arg[1] invalid_args = {
+        {
+            .name = "",
+            .kind = ArgKind.OPTION
+        }
+    };
+
+    Command[1] subcommands = {
+        {
+            .name = "get",
+            .args = invalid_args[0..]
+        }
+    };
+
+    Command root = {
+        .name = "config",
+        .subcommands = subcommands[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){};
+
+    bool success = root.parse(argv, &matches, &error);
+
+    assert(!success, "Invalid nested definitions should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error from nested command"
+    );
+}
+
+fn void test_empty_positional_name_is_rejected() @test
+{
+    PositionalArg[1] positionals = {
+        {
+            .name = "",
+            .required = true
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .positionals = positionals[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){};
+
+    bool success = command.parse(argv, &matches, &error);
+
+    assert(!success, "Empty positional names should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error"
+    );
+}
+
+fn void test_duplicate_positional_names_are_rejected() @test
+{
+    PositionalArg[2] positionals = {
+        {
+            .name = "file",
+            .required = true
+        }
+        ,
+        {
+            .name = "file",
+            .required = false
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .positionals = positionals[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){};
+
+    bool success = command.parse(argv, &matches, &error);
+
+    assert(!success, "Duplicate positional names should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error"
+    );
+}
+
+fn void test_positional_option_name_conflict_is_rejected() @test
+{
+    Arg[1] args = {
+        {
+            .name = "file",
+            .kind = ArgKind.OPTION
+        }
+    };
+
+    PositionalArg[1] positionals = {
+        {
+            .name = "file",
+            .required = true
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .args = args[0..],
+        .positionals = positionals[0..]
+    };
+
+    Matches matches;
+    matches.entries.init(mem);
+    defer matches.entries.free();
+
+    ParseError error;
+    String[] argv = (String[]){};
+
+    bool success = command.parse(argv, &matches, &error);
+
+    assert(!success, "Positional/option name conflicts should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error"
+    );
+}

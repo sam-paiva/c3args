@@ -6,13 +6,6 @@ import std::collections::list;
 
 fn void handle_get(Matches* matches)
 {
-    String name;
-
-    if (matches.get("name", &name))
-    {
-        io::printfn("Name: %s", name);
-    }
-
     bool verbose;
     matches.get_bool("verbose", &verbose);
 

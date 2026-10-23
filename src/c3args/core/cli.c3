@@ -19,6 +19,11 @@ fn bool Cli.parse(
 {
     cli.selected_command = &cli.root_command;
 
+    if (!cli.root_command.validate(error))
+    {
+        return false;
+    }
+
     return parse_command(cli,
         &cli.root_command,
         argv,
