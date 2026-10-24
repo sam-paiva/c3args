@@ -19,6 +19,15 @@ struct Matches
     bool help_requested;
 }
 
+fn void Matches.init(Matches* matches) {
+	matches.entries.init(mem);
+	matches.help_requested = false;
+}
+
+fn void Matches.deinit(Matches* matches) {
+	matches.entries.free();
+}
+
 fn bool Matches.has(Matches* matches, String name)
 {
     foreach (entry : matches.entries)
@@ -69,7 +78,7 @@ fn void Matches.add_option(Matches* matches, String name, String value)
     );
 }
 
-fn bool Matches.get_bool(Matches* matches, String name, bool* value)
+fn bool Matches.get_flag(Matches* matches, String name, bool* value)
 {
     foreach (entry : matches.entries)
     {

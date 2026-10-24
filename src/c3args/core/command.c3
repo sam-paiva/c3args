@@ -6,62 +6,56 @@ alias CommandHandler = fn void(Matches* matches);
 
 struct Command
 {
-    String name;
-    String description;
-    Arg[] args;
-    PositionalArg[] positionals;
-    Command[] subcommands;
-    CommandHandler handler;
+	String name;
+	String description;
+	Arg[] args;
+	PositionalArg[] positionals;
+	Command[] subcommands;
+	CommandHandler handler;
 }
 
 fn int Command.find_subcommand(Command* command, String name)
 {
-    for (int i = 0; i < command.subcommands.len; i++)
-    {
-        if (command.subcommands[i].name == name)
-        {
-            return i;
-        }
-    }
+	for (int i = 0; i < command.subcommands.len; i++)
+	{
+		if (command.subcommands[i].name == name)
+		{
+			return i;
+		}
+	}
 
-    return -1;
+	return -1;
 }
 
-fn int Command.find_long_arg(Command* command, String name)
+fn int find_long_arg(Command* command, String name) @private
 {
-    for (int i = 0; i < command.args.len; i++)
-    {
-        if (command.args[i].name == name)
-        {
-            return i;
-        }
-    }
+	for (int i = 0; i < command.args.len; i++)
+	{
+		if (command.args[i].name == name)
+		{
+			return i;
+		}
+	}
 
-    return -1;
+	return -1;
 }
 
-fn int Command.find_short_arg(Command* command, String name)
+fn int find_short_arg(Command* command, String name) @private
 {
-    for (int i = 0; i < command.args.len; i++)
-    {
-        if (
-            command.args[i].short_name.len > 0 &&
-            command.args[i].short_name == name
-        )
-        {
-            return i;
-        }
-    }
+	for (int i = 0; i < command.args.len; i++)
+	{
+		if (command.args[i].short_name.len > 0 && command.args[i].short_name == name)
+		{
+			return i;
+		}
+	}
 
-    return -1;
+	return -1;
 }
 
 fn bool is_negative_number(String token)
 {
-    return token.len >= 2 &&
-    token[0] == '-' &&
-    token[1] >= '0' &&
-    token[1] <= '9';
+	return token.len >= 2 && token[0] == '-' && token[1] >= '0' && token[1] <= '9';
 }
 
 fn bool Command.validate(Command* command, ParseError* error)
@@ -71,13 +65,36 @@ fn bool Command.validate(Command* command, ParseError* error)
     {
         Arg current = command.args[i];
 
-        if (current.name.len == 0)
+        // Long names must be non-empty and cannot start with '-' or contain '='.
+        if (
+            current.name.len == 0 ||
+            current.name[0] == '-' ||
+            current.name.contains("=")
+        )
         {
             error.kind = ParseErrorKind.INVALID_DEFINITION;
             error.argument = current.name;
             return false;
         }
 
+        // Short names are optional, but must be a single valid character.
+        if (
+            current.short_name.len > 1 ||
+            (
+                current.short_name.len > 0 &&
+                (
+                    current.short_name[0] == '-' ||
+                    current.short_name.contains("=")
+                )
+            )
+        )
+        {
+            error.kind = ParseErrorKind.INVALID_DEFINITION;
+            error.argument = current.short_name;
+            return false;
+        }
+
+        // Argument names and short names must be unique.
         for (int j = i + 1; j < command.args.len; j++)
         {
             Arg other = command.args[j];
@@ -108,7 +125,11 @@ fn bool Command.validate(Command* command, ParseError* error)
     {
         PositionalArg current = command.positionals[i];
 
-        if (current.name.len == 0)
+        if (
+            current.name.len == 0 ||
+            current.name[0] == '-' ||
+            current.name.contains("=")
+        )
         {
             error.kind = ParseErrorKind.INVALID_DEFINITION;
             error.argument = current.name;
@@ -136,10 +157,18 @@ fn bool Command.validate(Command* command, ParseError* error)
             optional_positional_seen = true;
         }
 
-        // Positional names must not conflict with option names.
+        // Positional names must not conflict with option names or aliases.
         for (int j = 0; j < command.args.len; j++)
         {
-            if (current.name == command.args[j].name)
+            Arg arg = command.args[j];
+
+            if (
+                current.name == arg.name ||
+                (
+                    arg.short_name.len > 0 &&
+                    current.name == arg.short_name
+                )
+            )
             {
                 error.kind = ParseErrorKind.INVALID_DEFINITION;
                 error.argument = current.name;
@@ -164,7 +193,11 @@ fn bool Command.validate(Command* command, ParseError* error)
     {
         Command* current = &command.subcommands[i];
 
-        if (current.name.len == 0)
+        if (
+            current.name.len == 0 ||
+            current.name[0] == '-' ||
+            current.name.contains("=")
+        )
         {
             error.kind = ParseErrorKind.INVALID_DEFINITION;
             error.argument = current.name;
@@ -192,84 +225,84 @@ fn bool Command.validate(Command* command, ParseError* error)
 }
 
 fn bool Command.parse_positional(
-    Command* command,
-    String token,
-    int* positional_index,
-    Matches* matches,
-    ParseError* error
+	Command* command,
+	String token,
+	int* positional_index,
+	Matches* matches,
+	ParseError* error
 )
 {
-    if (*positional_index >= command.positionals.len)
-    {
-        error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
-        error.argument = token;
-        return false;
-    }
+	if (*positional_index >= command.positionals.len)
+	{
+		error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
+		error.argument = token;
+		return false;
+	}
 
-    PositionalArg positional = command.positionals[*positional_index];
+	PositionalArg positional = command.positionals[*positional_index];
 
-    matches.add_option(positional.name, token);
+	matches.add_option(positional.name, token);
 
-    if (!positional.allow_multiple)
-    {
-        (*positional_index)++;
-    }
+	if (!positional.allow_multiple)
+	{
+		(*positional_index)++;
+	}
 
-    return true;
+	return true;
 }
 
 fn void Command.resolve_option_token(
-    Command* command,
-    String token,
-    String* name,
-    String* value,
-    bool* has_inline_value,
-    int* arg_index
+	Command* command,
+	String token,
+	String* name,
+	String* value,
+	bool* has_inline_value,
+	int* arg_index
 )
 {
-    bool is_long_option = token[1] == '-';
-    String option_token;
+	bool is_long_option = token[1] == '-';
+	String option_token;
 
-    if (is_long_option)
-    {
-        option_token = token[2..];
-    }
-    else
-    {
-        option_token = token[1..];
-    }
+	if (is_long_option)
+	{
+		option_token = token[2..];
+	}
+	else
+	{
+		option_token = token[1..];
+	}
 
-    * has_inline_value = false;
-    *name = option_token;
-    *value = "";
+	*has_inline_value = false;
+	*name = option_token;
+	*value = "";
 
-    for (int j = 0; j < option_token.len; j++)
-    {
-        if (option_token[j] == '=')
-        {
-            if (j == 0)
-            {
-                *name = "";
-            }
-            else
-            {
-                *name = option_token[0..(j - 1)];
-            }
+	for (int j = 0; j < option_token.len; j++)
+	{
+		if (option_token[j] == '=')
+		{
+			if (j == 0)
+			{
+				*name = "";
+			}
+			else
+			{
+				*name = option_token[0..(j - 1)];
+			}
 
-            * value = option_token[(j + 1)..];
-            *has_inline_value = true;
-            break;
-        }
-    }
+			*value = option_token[(j + 1)..];
+			*has_inline_value = true;
+			break;
+		}
+	}
 
-    if (is_long_option)
-    {
-        *arg_index = command.find_long_arg(*name);
-    }
-    else
-    {
-        *arg_index = command.find_short_arg(*name);
-    }
+	if (is_long_option)
+	{
+		*arg_index = find_long_arg(command, *name);
+	}
+	else
+	{
+		*arg_index = find_short_arg(command, *name);
+	}
 }
 
 fn bool Command.parse_option(
@@ -357,11 +390,14 @@ fn bool Command.parse_option(
 
         String next_token = argv[*index + 1];
 
-        // Accept negative numeric values, but not another option.
+        // Allow help tokens as values when an option expects a value.
+        // Other option-like tokens remain invalid, except negative numbers.
         if (
             next_token.len >= 2 &&
             next_token[0] == '-' &&
-            !is_negative_number(next_token)
+            !is_negative_number(next_token) &&
+            next_token != "--help" &&
+            next_token != "-h"
         )
         {
             error.kind = ParseErrorKind.MISSING_VALUE;
@@ -377,34 +413,31 @@ fn bool Command.parse_option(
     return true;
 }
 
-fn bool Command.validate_required_arguments(
-    Command* command,
-    Matches* matches,
-    ParseError* error
-)
+fn bool Command.validate_required_arguments(Command* command, Matches* matches, ParseError* error)
 {
-    foreach (arg : command.args)
-    {
-        if (arg.required && !matches.has(arg.name))
-        {
-            error.kind = ParseErrorKind.MISSING_REQUIRED_ARGUMENT;
-            error.argument = arg.name;
-            return false;
-        }
-    }
+	foreach (arg : command.args)
+	{
+		if (arg.required && !matches.has(arg.name))
+		{
+			error.kind = ParseErrorKind.MISSING_REQUIRED_ARGUMENT;
+			error.argument = arg.name;
+			return false;
+		}
+	}
 
-    foreach (positional : command.positionals)
-    {
-        if (positional.required && !matches.has(positional.name))
-        {
-            error.kind = ParseErrorKind.MISSING_REQUIRED_ARGUMENT;
-            error.argument = positional.name;
-            return false;
-        }
-    }
+	foreach (positional : command.positionals)
+	{
+		if (positional.required && !matches.has(positional.name))
+		{
+			error.kind = ParseErrorKind.MISSING_REQUIRED_ARGUMENT;
+			error.argument = positional.name;
+			return false;
+		}
+	}
 
-    return true;
+	return true;
 }
+
 
 fn bool Command.parse(
     Command* command,
@@ -432,6 +465,14 @@ fn bool Command.parse(
             continue;
         }
 
+        // Recognize help only when it is parsed as an argument,
+        // not when it has already been consumed as an option value.
+        if (!options_terminated && (token == "--help" || token == "-h"))
+        {
+            matches.help_requested = true;
+            return true;
+        }
+
         // Parse positional arguments.
         if (options_terminated || token.len == 0 || token[0] != '-')
         {
@@ -448,13 +489,7 @@ fn bool Command.parse(
             continue;
         }
 
-        if (!command.parse_option(
-                argv,
-                &i,
-                token,
-                matches,
-                error
-            ))
+        if (!command.parse_option(argv, &i, token, matches, error))
         {
             return false;
         }
@@ -462,3 +497,4 @@ fn bool Command.parse(
 
     return command.validate_required_arguments(matches, error);
 }
+

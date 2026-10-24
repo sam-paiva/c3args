@@ -7,7 +7,7 @@ import std::collections::list;
 fn void handle_get(Matches* matches)
 {
     bool verbose;
-    matches.get_bool("verbose", &verbose);
+    matches.get_flag("verbose", &verbose);
 
     if (verbose)
     {
@@ -117,8 +117,8 @@ fn void main(String[] argv)
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
 

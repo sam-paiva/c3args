@@ -20,8 +20,8 @@ fn void test_long_option_inline_value() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--name=Samuel" };
@@ -52,8 +52,8 @@ fn void test_short_option_inline_value() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "-n=Samuel" };
@@ -83,8 +83,8 @@ fn void test_variadic_positional_arguments() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "Samuel", "Alex", "Jordan" };
@@ -123,8 +123,8 @@ fn void test_unknown_option_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--unknown" };
@@ -155,8 +155,8 @@ fn void test_missing_required_option_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -187,8 +187,8 @@ fn void test_duplicate_option_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--name", "Samuel", "--name", "Alex" };
@@ -218,8 +218,8 @@ fn void test_repeated_flag_is_idempotent() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--verbose", "--verbose" };
@@ -249,8 +249,8 @@ fn void test_missing_option_value_is_rejected() @test
 
     {
         Matches matches;
-        matches.entries.init(mem);
-        defer matches.entries.free();
+        matches.init();
+        defer matches.deinit();
 
         ParseError error;
         String[] argv = (String[]){ "--name" };
@@ -266,8 +266,8 @@ fn void test_missing_option_value_is_rejected() @test
 
     {
         Matches matches;
-        matches.entries.init(mem);
-        defer matches.entries.free();
+        matches.init();
+        defer matches.deinit();
 
         ParseError error;
         String[] argv = (String[]){ "--name=" };
@@ -298,8 +298,8 @@ fn void test_extra_positional_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "Samuel", "Alex" };
@@ -338,8 +338,8 @@ fn void test_mixed_positionals_and_flags() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "Samuel", "--verbose", "Alex" };
@@ -376,8 +376,8 @@ fn void test_double_dash_allows_dash_prefixed_value() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--", "-important-file.txt" };
@@ -416,8 +416,8 @@ fn void test_double_dash_ends_option_parsing() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--", "--verbose", "-x" };
@@ -454,8 +454,8 @@ fn void test_double_dash_without_required_value_fails() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--" };
@@ -484,8 +484,8 @@ fn void test_negative_value_is_accepted() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--count", "-5" };
@@ -514,8 +514,8 @@ fn void test_empty_inline_value_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){ "--name=" };
@@ -551,8 +551,8 @@ fn void test_duplicate_long_argument_name_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -588,8 +588,8 @@ fn void test_duplicate_short_argument_name_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -618,8 +618,8 @@ fn void test_empty_argument_name_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -651,8 +651,8 @@ fn void test_duplicate_sibling_subcommands_are_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -688,8 +688,8 @@ fn void test_invalid_definition_in_nested_subcommand_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -718,8 +718,8 @@ fn void test_empty_positional_name_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -753,8 +753,8 @@ fn void test_duplicate_positional_names_are_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -791,8 +791,8 @@ fn void test_positional_option_name_conflict_is_rejected() @test
     };
 
     Matches matches;
-    matches.entries.init(mem);
-    defer matches.entries.free();
+    matches.init();
+    defer matches.deinit();
 
     ParseError error;
     String[] argv = (String[]){};
@@ -805,3 +805,294 @@ fn void test_positional_option_name_conflict_is_rejected() @test
         "Expected invalid definition error"
     );
 }
+
+
+fn void test_get_all_appends_to_existing_values() @test
+{
+    Matches matches;
+    matches.init();
+    defer matches.deinit();
+
+    matches.add_option("name", "Samuel");
+    matches.add_option("name", "Alex");
+
+    List{String} names;
+    names.init(mem);
+    defer names.free();
+
+    names.push("Existing");
+
+    matches.get_all("name", &names);
+
+    assert(names.len() == 3, "Existing value and both matches should remain");
+    assert(names[0] == "Existing", "Existing value should be preserved");
+    assert(names[1] == "Samuel", "First matching value should be appended");
+    assert(names[2] == "Alex", "Second matching value should be appended");
+}
+
+fn void test_get_all_for_missing_name_adds_nothing() @test
+{
+    Matches matches;
+    matches.init();
+    defer matches.deinit();
+
+    List{String} values;
+    values.init(mem);
+    defer values.free();
+
+    values.push("Existing");
+
+    matches.get_all("missing", &values);
+
+    assert(values.len() == 1, "Missing name should add no values");
+    assert(values[0] == "Existing", "Existing value should remain unchanged");
+}
+
+fn void test_get_flag_for_missing_name_sets_false() @test
+{
+    Matches matches;
+    matches.init();
+    defer matches.deinit();
+
+    bool value = true;
+
+    bool found = matches.get_flag("missing", &value);
+
+    assert(!found, "Missing flag should return false");
+    assert(!value, "Missing flag should set output to false");
+}
+
+fn void test_duplicate_short_names_are_rejected() @test
+{
+    Command command = {
+        .name = "test",
+        .args = {
+            {
+                .name = "name",
+                .short_name = "n",
+                .kind = ArgKind.OPTION,
+            },
+            {
+                .name = "number",
+                .short_name = "n",
+                .kind = ArgKind.OPTION,
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(!valid, "Duplicate short names should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Duplicate short names should produce an invalid-definition error"
+    );
+}
+
+fn void test_long_only_arguments_can_share_empty_short_names() @test
+{
+    Command command = {
+        .name = "test",
+        .args = {
+            {
+                .name = "name",
+                .kind = ArgKind.OPTION,
+            },
+            {
+                .name = "number",
+                .kind = ArgKind.OPTION,
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(valid, "Long-only arguments should allow empty short names");
+}
+
+fn void test_positional_name_conflicting_with_short_name_is_rejected() @test
+{
+    Command command = {
+        .name = "test",
+        .args = {
+            {
+                .name = "output",
+                .short_name = "o",
+                .kind = ArgKind.OPTION,
+            },
+        },
+        .positionals = {
+            {
+                .name = "o",
+                .required = true,
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(!valid, "Positional name must not conflict with a short option name");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Conflict should produce an invalid-definition error"
+    );
+}
+
+fn void test_multiple_long_only_arguments_are_valid() @test
+{
+    Command command = {
+        .name = "test",
+        .args = {
+            {
+                .name = "output",
+                .kind = ArgKind.OPTION,
+            },
+            {
+                .name = "verbose",
+                .kind = ArgKind.FLAG,
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(valid, "Multiple long-only arguments should be valid");
+}
+
+
+fn void test_long_argument_name_starting_with_dash_is_rejected() @test
+{
+    Command command = {
+        .name = "test",
+        .args = {
+            {
+                .name = "-output",
+                .kind = ArgKind.OPTION,
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(!valid, "Long argument names must not start with a dash");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Invalid names should produce an invalid-definition error"
+    );
+}
+
+fn void test_long_argument_name_containing_equals_is_rejected() @test
+{
+    Command command = {
+        .name = "test",
+        .args = {
+            {
+                .name = "out=put",
+                .kind = ArgKind.OPTION,
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(!valid, "Long argument names must not contain equals");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Invalid names should produce an invalid-definition error"
+    );
+}
+
+fn void test_short_name_longer_than_one_character_is_rejected() @test
+{
+    Command command = {
+        .name = "test",
+        .args = {
+            {
+                .name = "output",
+                .short_name = "out",
+                .kind = ArgKind.OPTION,
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(!valid, "Short names must contain exactly one character");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Invalid short names should produce an invalid-definition error"
+    );
+}
+
+fn void test_positional_name_starting_with_dash_is_rejected() @test
+{
+    Command command = {
+        .name = "test",
+        .positionals = {
+            {
+                .name = "--file",
+                .required = true,
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(!valid, "Positional names must not start with a dash");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Invalid names should produce an invalid-definition error"
+    );
+}
+
+
+fn void test_subcommand_name_starting_with_dash_is_rejected() @test
+{
+    Command command = {
+        .name = "test",
+        .subcommands = {
+            {
+                .name = "-invalid",
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(!valid, "Subcommand names must not start with a dash");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Invalid subcommand names should produce an invalid-definition error"
+    );
+}
+
+fn void test_subcommand_name_containing_equals_is_rejected() @test
+{
+    Command command = {
+        .name = "test",
+        .subcommands = {
+            {
+                .name = "invalid=name",
+            },
+        },
+    };
+
+    ParseError error;
+    bool valid = command.validate(&error);
+
+    assert(!valid, "Subcommand names must not contain equals signs");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Invalid subcommand names should produce an invalid-definition error"
+    );
+}
+
