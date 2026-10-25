@@ -10,20 +10,37 @@ struct Cli
 	Command* selected_command;
 }
 
-fn bool Cli.parse(Cli* cli, String[] argv, Matches* matches, ParseError* error)
+fn bool Cli.parse(
+    Cli* cli,
+    String[] argv,
+    Matches* matches,
+    ParseError* error
+)
 {
-	cli.selected_command = &cli.root_command;
+    matches.reset();
 
-	if (!cli.root_command.validate(error))
-	{
-		return false;
-	}
+    cli.selected_command = &cli.root_command;
 
-	return parse_command(cli, &cli.root_command, argv, matches, error);
+    if (!cli.root_command.validate(error))
+    {
+        return false;
+    }
+
+    return parse_command(
+        cli,
+        &cli.root_command,
+        argv,
+        matches,
+        error
+    );
 }
 
-
-fn bool parse_command(Cli* cli, Command* command, String[] argv, Matches* matches, ParseError* error) @private
+fn bool parse_command(
+	Cli* cli, 
+	Command* command, 
+	String[] argv, 
+	Matches* matches, 
+	ParseError* error) @private
 {
 	cli.selected_command = command;
 
@@ -110,116 +127,6 @@ fn void Cli.print_command_path(Cli* cli, Command* command, Command* target)
 
 fn void Cli.print_help(Cli* cli)
 {
-	Command* command = &cli.root_command;
-
-	if (cli.selected_command != null)
-	{
-		command = cli.selected_command;
-	}
-
-	// Title and description.
-	io::printfn("%s", command.name);
-
-	if (command.description.len > 0)
-	{
-		io::printfn("%s", command.description);
-	}
-
-	// Usage line with the full command path.
-	io::print("\nUsage:\n  ");
-	cli.print_command_path(&cli.root_command, command);
-
-	for (int i = 0; i < command.positionals.len; i++)
-	{
-		PositionalArg positional = command.positionals[i];
-
-		if (positional.required)
-		{
-			io::printf(" <%s>", positional.name);
-		}
-		else
-		{
-			io::printf(" [%s]", positional.name);
-		}
-
-		if (positional.allow_multiple)
-		{
-			io::print("...");
-		}
-	}
-
-	if (command.args.len > 0)
-	{
-		io::print(" [OPTIONS]");
-	}
-
-	if (command.subcommands.len > 0)
-	{
-		io::print(" <COMMAND>");
-	}
-
-	io::print("\n");
-
-	// Positional arguments.
-	if (command.positionals.len > 0)
-	{
-		io::printfn("\nArguments:");
-
-		foreach (positional : command.positionals)
-		{
-			io::printf("  <%s>  %s", positional.name, positional.description);
-
-			if (positional.required)
-			{
-				io::print(" (required)");
-			}
-
-			io::print("\n");
-		}
-	}
-
-	// Options and flags.
-	if (command.args.len > 0)
-	{
-		io::printfn("\nOptions:");
-
-		foreach (arg : command.args)
-		{
-			if (arg.short_name.len > 0)
-			{
-				io::printf("  -%s, --%s", arg.short_name, arg.name);
-			}
-			else
-			{
-				io::printf("      --%s", arg.name);
-			}
-
-			if (arg.kind == ArgKind.OPTION)
-			{
-				io::print(" <VALUE>");
-			}
-
-			io::printf("  %s", arg.description);
-
-			if (arg.required)
-			{
-				io::print(" (required)");
-			}
-
-			io::print("\n");
-		}
-	}
-
-	// Nested commands.
-	if (command.subcommands.len > 0)
-	{
-		io::printfn("\nCommands:");
-
-		foreach (subcommand : command.subcommands)
-		{
-			io::printf("  %s  %s\n", subcommand.name, subcommand.description);
-		}
-	}
-
-	io::printfn("  -h, --help  Show this help message");
+	String help = c3args::core::format(cli);
+	io::print(help);
 }

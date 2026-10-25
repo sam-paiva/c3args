@@ -103,3 +103,9 @@ fn void Matches.get_all(Matches* matches, String name, List{String} * values)
         }
     }
 }
+
+fn void Matches.reset(Matches* matches)
+{
+    matches.entries.clear();
+    matches.help_requested = false;
+}

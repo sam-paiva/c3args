@@ -296,3 +296,108 @@ fn void test_cli_help_token_can_be_an_option_value() @test
     );
 }
 
+fn void test_cli_parse_resets_previous_flags()
+{
+    Arg[1] definitions = {{
+        .name = "verbose",
+        .short_name = "v",
+        .kind = ArgKind.FLAG,
+        .description = "Enable verbose output"
+    }};
+
+    Command root = {
+        .name = "test",
+        .args = definitions[0..]
+    };
+
+    Cli cli = {
+        .name = "test",
+        .root_command = root
+    };
+
+    Matches matches;
+    matches.init();
+    defer matches.deinit();
+
+    ParseError error;
+
+    String[] first_argv = (String[]){"--verbose"};
+    assert(cli.parse(first_argv, &matches, &error), "First parse should succeed");
+
+    bool verbose = false;
+    assert(matches.get_flag("verbose", &verbose), "Flag should be present after first parse");
+    assert(verbose, "Flag should be true after first parse");
+
+    String[] second_argv = (String[]){};
+    assert(cli.parse(second_argv, &matches, &error), "Second parse should succeed");
+
+    verbose = true;
+    assert(!matches.get_flag("verbose", &verbose), "Previous flag should be cleared");
+    assert(!verbose, "Absent flag should be false");
+}
+
+fn void test_cli_parse_resets_previous_help_request()
+{
+    Command root = {
+        .name = "test",
+        .description = "Test command"
+    };
+
+    Cli cli = {
+        .name = "test",
+        .root_command = root
+    };
+
+    Matches matches;
+    matches.init();
+    defer matches.deinit();
+
+    ParseError error;
+
+    String[] first_argv = (String[]){"--help"};
+    assert(cli.parse(first_argv, &matches, &error), "Help parse should succeed");
+    assert(matches.help_requested, "Help should be requested");
+
+    String[] second_argv = (String[]){};
+    assert(cli.parse(second_argv, &matches, &error), "Second parse should succeed");
+    assert(!matches.help_requested, "Previous help request should be cleared");
+}
+
+fn void test_cli_parse_resets_state_after_failure()
+{
+    Arg[1] definitions = {{
+        .name = "verbose",
+        .short_name = "v",
+        .kind = ArgKind.FLAG,
+        .description = "Enable verbose output"
+    }};
+
+    Command root = {
+        .name = "test",
+        .args = definitions[0..]
+    };
+
+    Cli cli = {
+        .name = "test",
+        .root_command = root
+    };
+
+    Matches matches;
+    matches.init();
+    defer matches.deinit();
+
+    ParseError error;
+
+    String[] first_argv = (String[]){"--verbose", "--unknown"};
+    assert(!cli.parse(first_argv, &matches, &error), "First parse should fail");
+
+    bool verbose = false;
+    assert(matches.get_flag("verbose", &verbose), "Flag should have been parsed before the error");
+
+    String[] second_argv = (String[]){};
+    assert(cli.parse(second_argv, &matches, &error), "Second parse should succeed");
+
+    verbose = true;
+    assert(!matches.get_flag("verbose", &verbose), "Failed parse state should not persist");
+    assert(!verbose, "Absent flag should be false");
+}

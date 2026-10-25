@@ -60,168 +60,160 @@ fn bool is_negative_number(String token)
 
 fn bool Command.validate(Command* command, ParseError* error)
 {
-    // Validate option and flag definitions.
-    for (int i = 0; i < command.args.len; i++)
-    {
-        Arg current = command.args[i];
+	// Validate option and flag definitions.
+	for (int i = 0; i < command.args.len; i++)
+	{
+		Arg current = command.args[i];
 
-        // Long names must be non-empty and cannot start with '-' or contain '='.
-        if (
-            current.name.len == 0 ||
-            current.name[0] == '-' ||
-            current.name.contains("=")
-        )
-        {
-            error.kind = ParseErrorKind.INVALID_DEFINITION;
-            error.argument = current.name;
-            return false;
-        }
+		// Long names must be non-empty and cannot start with '-' or contain '='.
+		if (current.name.len == 0 || current.name[0] == '-' || current.name.contains("="))
+		{
+			error.kind = ParseErrorKind.INVALID_DEFINITION;
+			error.argument = current.name;
+			return false;
+		}
 
-        // Short names are optional, but must be a single valid character.
-        if (
-            current.short_name.len > 1 ||
-            (
-                current.short_name.len > 0 &&
-                (
-                    current.short_name[0] == '-' ||
-                    current.short_name.contains("=")
-                )
-            )
-        )
-        {
-            error.kind = ParseErrorKind.INVALID_DEFINITION;
-            error.argument = current.short_name;
-            return false;
-        }
+		// Short names are optional, but must be a single valid character.
+		if (current.short_name.len > 1
+			|| (current.short_name.len > 0 && (current.short_name[0] == '-' || current.short_name.contains(
+			"="
+		))))
+		{
+			error.kind = ParseErrorKind.INVALID_DEFINITION;
+			error.argument = current.short_name;
+			return false;
+		}
 
-        // Argument names and short names must be unique.
-        for (int j = i + 1; j < command.args.len; j++)
-        {
-            Arg other = command.args[j];
+		// Argument names and short aliases must be unique,
+		// including collisions between the two categories.
+		for (int j = i + 1; j < command.args.len; j++)
+		{
+			Arg other = command.args[j];
 
-            if (current.name == other.name)
-            {
-                error.kind = ParseErrorKind.INVALID_DEFINITION;
-                error.argument = current.name;
-                return false;
-            }
+			// Duplicate long names.
+			if (current.name == other.name)
+			{
+				error.kind = ParseErrorKind.INVALID_DEFINITION;
+				error.argument = current.name;
+				return false;
+			}
 
-            if (
-                current.short_name.len > 0 &&
-                current.short_name == other.short_name
-            )
-            {
-                error.kind = ParseErrorKind.INVALID_DEFINITION;
-                error.argument = current.short_name;
-                return false;
-            }
-        }
-    }
+			// Duplicate short aliases.
+			if (current.short_name.len > 0 && other.short_name.len > 0 && current.short_name == other.short_name)
+			{
+				error.kind = ParseErrorKind.INVALID_DEFINITION;
+				error.argument = current.short_name;
+				return false;
+			}
 
-    // Validate positional definitions.
-    bool optional_positional_seen = false;
+			// Current long name conflicts with the other short alias.
+			if (other.short_name.len > 0 && current.name == other.short_name)
+			{
+				error.kind = ParseErrorKind.INVALID_DEFINITION;
+				error.argument = current.name;
+				return false;
+			}
 
-    for (int i = 0; i < command.positionals.len; i++)
-    {
-        PositionalArg current = command.positionals[i];
+			// Current short alias conflicts with the other long name.
+			if (current.short_name.len > 0 && current.short_name == other.name)
+			{
+				error.kind = ParseErrorKind.INVALID_DEFINITION;
+				error.argument = current.short_name;
+				return false;
+			}
+		}
+	}
 
-        if (
-            current.name.len == 0 ||
-            current.name[0] == '-' ||
-            current.name.contains("=")
-        )
-        {
-            error.kind = ParseErrorKind.INVALID_DEFINITION;
-            error.argument = current.name;
-            return false;
-        }
+	// Validate positional definitions.
+	bool optional_positional_seen = false;
 
-        // A variadic positional must be the final positional.
-        if (current.allow_multiple && i != command.positionals.len - 1)
-        {
-            error.kind = ParseErrorKind.INVALID_DEFINITION;
-            error.argument = current.name;
-            return false;
-        }
+	for (int i = 0; i < command.positionals.len; i++)
+	{
+		PositionalArg current = command.positionals[i];
 
-        // Required positionals cannot follow optional positionals.
-        if (current.required && optional_positional_seen)
-        {
-            error.kind = ParseErrorKind.INVALID_DEFINITION;
-            error.argument = current.name;
-            return false;
-        }
+		if (current.name.len == 0 || current.name[0] == '-' || current.name.contains("="))
+		{
+			error.kind = ParseErrorKind.INVALID_DEFINITION;
+			error.argument = current.name;
+			return false;
+		}
 
-        if (!current.required)
-        {
-            optional_positional_seen = true;
-        }
+		// A variadic positional must be the final positional.
+		if (current.allow_multiple && i != command.positionals.len - 1)
+		{
+			error.kind = ParseErrorKind.INVALID_DEFINITION;
+			error.argument = current.name;
+			return false;
+		}
 
-        // Positional names must not conflict with option names or aliases.
-        for (int j = 0; j < command.args.len; j++)
-        {
-            Arg arg = command.args[j];
+		// Required positionals cannot follow optional positionals.
+		if (current.required && optional_positional_seen)
+		{
+			error.kind = ParseErrorKind.INVALID_DEFINITION;
+			error.argument = current.name;
+			return false;
+		}
 
-            if (
-                current.name == arg.name ||
-                (
-                    arg.short_name.len > 0 &&
-                    current.name == arg.short_name
-                )
-            )
-            {
-                error.kind = ParseErrorKind.INVALID_DEFINITION;
-                error.argument = current.name;
-                return false;
-            }
-        }
+		if (!current.required)
+		{
+			optional_positional_seen = true;
+		}
 
-        // Positional names must be unique.
-        for (int j = i + 1; j < command.positionals.len; j++)
-        {
-            if (current.name == command.positionals[j].name)
-            {
-                error.kind = ParseErrorKind.INVALID_DEFINITION;
-                error.argument = current.name;
-                return false;
-            }
-        }
-    }
+		// Positional names must not conflict with option names or aliases.
+		for (int j = 0; j < command.args.len; j++)
+		{
+			Arg arg = command.args[j];
 
-    // Validate subcommand names and sibling uniqueness.
-    for (int i = 0; i < command.subcommands.len; i++)
-    {
-        Command* current = &command.subcommands[i];
+			if (current.name == arg.name || (arg.short_name.len > 0 && current.name == arg.short_name))
+			{
+				error.kind = ParseErrorKind.INVALID_DEFINITION;
+				error.argument = current.name;
+				return false;
+			}
+		}
 
-        if (
-            current.name.len == 0 ||
-            current.name[0] == '-' ||
-            current.name.contains("=")
-        )
-        {
-            error.kind = ParseErrorKind.INVALID_DEFINITION;
-            error.argument = current.name;
-            return false;
-        }
+		// Positional names must be unique.
+		for (int j = i + 1; j < command.positionals.len; j++)
+		{
+			if (current.name == command.positionals[j].name)
+			{
+				error.kind = ParseErrorKind.INVALID_DEFINITION;
+				error.argument = current.name;
+				return false;
+			}
+		}
+	}
 
-        for (int j = i + 1; j < command.subcommands.len; j++)
-        {
-            if (current.name == command.subcommands[j].name)
-            {
-                error.kind = ParseErrorKind.INVALID_DEFINITION;
-                error.argument = current.name;
-                return false;
-            }
-        }
+	// Validate subcommand names and sibling uniqueness.
+	for (int i = 0; i < command.subcommands.len; i++)
+	{
+		Command* current = &command.subcommands[i];
 
-        // Validate nested command definitions recursively.
-        if (!current.validate(error))
-        {
-            return false;
-        }
-    }
+		if (current.name.len == 0 || current.name[0] == '-' || current.name.contains("="))
+		{
+			error.kind = ParseErrorKind.INVALID_DEFINITION;
+			error.argument = current.name;
+			return false;
+		}
 
-    return true;
+		for (int j = i + 1; j < command.subcommands.len; j++)
+		{
+			if (current.name == command.subcommands[j].name)
+			{
+				error.kind = ParseErrorKind.INVALID_DEFINITION;
+				error.argument = current.name;
+				return false;
+			}
+		}
+
+		// Validate nested command definitions recursively.
+		if (!current.validate(error))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 fn bool Command.parse_positional(
@@ -306,111 +298,101 @@ fn void Command.resolve_option_token(
 }
 
 fn bool Command.parse_option(
-    Command* command,
-    String[] argv,
-    int* index,
-    String token,
-    Matches* matches,
-    ParseError* error
+	Command* command,
+	String[] argv,
+	int* index,
+	String token,
+	Matches* matches,
+	ParseError* error
 )
 {
-    if (token.len < 2)
-    {
-        error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
-        error.argument = token;
-        return false;
-    }
+	if (token.len < 2)
+	{
+		error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
+		error.argument = token;
+		return false;
+	}
 
-    String name;
-    String value;
-    bool has_inline_value = false;
-    int arg_index = -1;
+	String name;
+	String value;
+	bool has_inline_value =  false;
+	int arg_index         = -1;
 
-    command.resolve_option_token(
-        token,
-        &name,
-        &value,
-        &has_inline_value,
-        &arg_index
-    );
+	command.resolve_option_token(token, &name, &value, &has_inline_value, &arg_index);
 
-    if (arg_index == -1)
-    {
-        error.kind = ParseErrorKind.UNKNOWN_OPTION;
-        error.argument = token;
-        return false;
-    }
+	if (arg_index == -1)
+	{
+		error.kind = ParseErrorKind.UNKNOWN_OPTION;
+		error.argument = token;
+		return false;
+	}
 
-    Arg arg = command.args[arg_index];
+	Arg arg = command.args[arg_index];
 
-    // Flags are idempotent and don't consume values.
-    if (arg.kind == ArgKind.FLAG)
-    {
-        if (has_inline_value)
-        {
-            error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
-            error.argument = token;
-            return false;
-        }
+	// Flags are idempotent and don't consume values.
+	if (arg.kind == ArgKind.FLAG)
+	{
+		if (has_inline_value)
+		{
+			error.kind = ParseErrorKind.UNEXPECTED_ARGUMENT;
+			error.argument = token;
+			return false;
+		}
 
-        if (!matches.has(arg.name))
-        {
-            matches.add_flag(arg.name);
-        }
+		if (!matches.has(arg.name))
+		{
+			matches.add_flag(arg.name);
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    // Reject duplicate options unless repetition is enabled.
-    if (matches.has(arg.name) && !arg.allow_multiple)
-    {
-        error.kind = ParseErrorKind.DUPLICATE_ARGUMENT;
-        error.argument = arg.name;
-        return false;
-    }
+	// Reject duplicate options unless repetition is enabled.
+	if (matches.has(arg.name) && !arg.allow_multiple)
+	{
+		error.kind = ParseErrorKind.DUPLICATE_ARGUMENT;
+		error.argument = arg.name;
+		return false;
+	}
 
-    // Obtain the option value.
-    if (has_inline_value)
-    {
-        if (value.len == 0)
-        {
-            error.kind = ParseErrorKind.MISSING_VALUE;
-            error.argument = token;
-            return false;
-        }
-    }
-    else
-    {
-        if ((long)*index + 1 >= argv.len)
-        {
-            error.kind = ParseErrorKind.MISSING_VALUE;
-            error.argument = token;
-            return false;
-        }
+	// Obtain the option value.
+	if (has_inline_value)
+	{
+		if (value.len == 0)
+		{
+			error.kind = ParseErrorKind.MISSING_VALUE;
+			error.argument = token;
+			return false;
+		}
+	}
+	else
+	{
+		if ((long)*index + 1 >= argv.len)
+		{
+			error.kind = ParseErrorKind.MISSING_VALUE;
+			error.argument = token;
+			return false;
+		}
 
-        String next_token = argv[*index + 1];
+		String next_token = argv[*index + 1];
 
-        // Allow help tokens as values when an option expects a value.
-        // Other option-like tokens remain invalid, except negative numbers.
-        if (
-            next_token.len >= 2 &&
-            next_token[0] == '-' &&
-            !is_negative_number(next_token) &&
-            next_token != "--help" &&
-            next_token != "-h"
-        )
-        {
-            error.kind = ParseErrorKind.MISSING_VALUE;
-            error.argument = token;
-            return false;
-        }
+		// Allow help tokens as values when an option expects a value.
+		// Other option-like tokens remain invalid, except negative numbers.
+		if (next_token.len >= 2 && next_token[0] == '-' && !is_negative_number(
+			next_token
+		) && next_token != "--help" && next_token != "-h")
+		{
+			error.kind = ParseErrorKind.MISSING_VALUE;
+			error.argument = token;
+			return false;
+		}
 
-        (*index)++;
-        value = argv[*index];
-    }
+		(*index)++;
+		value = argv[*index];
+	}
 
-    matches.add_option(arg.name, value);
-    return true;
+	matches.add_option(arg.name, value);
+	return true;
 }
 
 fn bool Command.validate_required_arguments(Command* command, Matches* matches, ParseError* error)
@@ -439,62 +421,51 @@ fn bool Command.validate_required_arguments(Command* command, Matches* matches, 
 }
 
 
-fn bool Command.parse(
-    Command* command,
-    String[] argv,
-    Matches* matches,
-    ParseError* error
-)
+fn bool Command.parse(Command* command, String[] argv, Matches* matches, ParseError* error)
 {
-    if (!command.validate(error))
-    {
-        return false;
-    }
+	if (!command.validate(error))
+	{
+		return false;
+	}
 
-    int positional_index = 0;
-    bool options_terminated = false;
+	int positional_index    = 0;
+	bool options_terminated = false;
 
-    for (int i = 0; i < argv.len; i++)
-    {
-        String token = argv[i];
+	for (int i = 0; i < argv.len; i++)
+	{
+		String token = argv[i];
 
-        // "--" terminates option parsing.
-        if (!options_terminated && token == "--")
-        {
-            options_terminated = true;
-            continue;
-        }
+		// "--" terminates option parsing.
+		if (!options_terminated && token == "--")
+		{
+			options_terminated = true;
+			continue;
+		}
 
-        // Recognize help only when it is parsed as an argument,
-        // not when it has already been consumed as an option value.
-        if (!options_terminated && (token == "--help" || token == "-h"))
-        {
-            matches.help_requested = true;
-            return true;
-        }
+		// Recognize help only when it is parsed as an argument,
+		// not when it has already been consumed as an option value.
+		if (!options_terminated && (token == "--help" || token == "-h"))
+		{
+			matches.help_requested = true;
+			return true;
+		}
 
-        // Parse positional arguments.
-        if (options_terminated || token.len == 0 || token[0] != '-')
-        {
-            if (!command.parse_positional(
-                    token,
-                    &positional_index,
-                    matches,
-                    error
-                ))
-            {
-                return false;
-            }
+		// Parse positional arguments.
+		if (options_terminated || token.len == 0 || token[0] != '-')
+		{
+			if (!command.parse_positional(token, &positional_index, matches, error))
+			{
+				return false;
+			}
 
-            continue;
-        }
+			continue;
+		}
 
-        if (!command.parse_option(argv, &i, token, matches, error))
-        {
-            return false;
-        }
-    }
+		if (!command.parse_option(argv, &i, token, matches, error))
+		{
+			return false;
+		}
+	}
 
-    return command.validate_required_arguments(matches, error);
+	return command.validate_required_arguments(matches, error);
 }
-

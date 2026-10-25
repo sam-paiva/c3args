@@ -1,3 +1,5 @@
 build/
 out/
 .DS_Store
+c3args.dSYM/
+c3args

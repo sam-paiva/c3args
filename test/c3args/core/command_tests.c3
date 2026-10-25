@@ -1096,3 +1096,56 @@ fn void test_subcommand_name_containing_equals_is_rejected() @test
     );
 }
 
+fn void test_command_rejects_long_name_matching_another_short_alias()
+{
+    Arg[2] definitions = {
+        {
+            .name = "verbose",
+            .short_name = "v",
+            .kind = ArgKind.FLAG
+        },
+        {
+            .name = "version",
+            .short_name = "verbose",
+            .kind = ArgKind.FLAG
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .args = definitions[0..]
+    };
+
+    ParseError error;
+
+    assert(!command.validate(&error), "Conflicting names should be rejected");
+    assert(
+        error.kind == ParseErrorKind.INVALID_DEFINITION,
+        "Expected invalid definition error"
+    );
+}
+
+fn void test_command_accepts_non_conflicting_long_and_short_names()
+{
+    Arg[2] definitions = {
+        {
+            .name = "verbose",
+            .short_name = "v",
+            .kind = ArgKind.FLAG
+        },
+        {
+            .name = "version",
+            .short_name = "V",
+            .kind = ArgKind.FLAG
+        }
+    };
+
+    Command command = {
+        .name = "test",
+        .args = definitions[0..]
+    };
+
+    ParseError error;
+
+    assert(command.validate(&error), "Non-conflicting names should be accepted");
+}
